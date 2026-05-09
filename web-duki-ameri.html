@@ -856,6 +856,47 @@
         .ftri-2 { border-width: 0 5px 9px 5px; border-color: transparent transparent var(--red) transparent; opacity: 0.5; }
         .ftri-3 { border-width: 0 3px 5px 3px; border-color: transparent transparent var(--red) transparent; opacity: 0.3; }
 
+        /* ─── MUSIC BUTTON ──────────────────── */
+        .music-btn {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            z-index: 9000;
+            background: rgba(6,6,6,0.88);
+            border: 1px solid rgba(196,30,58,0.4);
+            color: var(--muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            backdrop-filter: blur(12px);
+        }
+        .music-btn:hover {
+            border-color: var(--red);
+            color: var(--text);
+        }
+        .music-btn.playing {
+            border-color: rgba(196,30,58,0.7);
+            color: var(--red);
+        }
+        .music-btn.playing svg {
+            animation: musicPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes musicPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.85); }
+        }
+        @media (max-width: 480px) {
+            .music-btn { bottom: 20px; right: 20px; padding: 9px 12px; }
+            .music-label { display: none; }
+        }
+
         /* ─── CUSTOM CURSOR ─────────────────── */
         .cursor-dot {
             position: fixed;
@@ -1048,6 +1089,20 @@
     </style>
 </head>
 <body>
+
+<!-- Audio -->
+<audio id="bgMusic" src="assets/duki-vapormax.mp3" loop preload="auto"></audio>
+
+<!-- Music control -->
+<button class="music-btn" id="musicBtn" aria-label="Toggle music" title="Música">
+    <svg id="musicIconPlay" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M9 4l11 8-11 8V4z"/>
+    </svg>
+    <svg id="musicIconPause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+    </svg>
+    <span class="music-label" id="musicLabel" data-i18n-play="Música" data-i18n-en-play="Music">Música</span>
+</button>
 
 <!-- Cursor -->
 <div class="cursor-dot" id="cursorDot"></div>
@@ -1693,6 +1748,55 @@
 
     const saved = localStorage.getItem('duki-lang');
     if (saved && saved !== 'es') applyLang(saved);
+})();
+
+// ── Background music ──
+(function () {
+    const audio = document.getElementById('bgMusic');
+    const btn = document.getElementById('musicBtn');
+    const iconPlay = document.getElementById('musicIconPlay');
+    const iconPause = document.getElementById('musicIconPause');
+    const label = document.getElementById('musicLabel');
+    if (!audio || !btn) return;
+
+    let started = false;
+
+    function setPlaying(isPlaying) {
+        if (isPlaying) {
+            btn.classList.add('playing');
+            iconPlay.style.display = 'none';
+            iconPause.style.display = 'block';
+            label.textContent = document.documentElement.lang === 'en' ? 'Pause' : 'Pausar';
+        } else {
+            btn.classList.remove('playing');
+            iconPlay.style.display = 'block';
+            iconPause.style.display = 'none';
+            label.textContent = document.documentElement.lang === 'en' ? 'Music' : 'Música';
+        }
+    }
+
+    function startMusic() {
+        if (started) return;
+        started = true;
+        audio.volume = 0.45;
+        audio.play().then(() => setPlaying(true)).catch(() => {});
+        document.removeEventListener('click', startMusic);
+        document.removeEventListener('scroll', startMusic);
+    }
+
+    document.addEventListener('click', startMusic, { once: true });
+    document.addEventListener('scroll', startMusic, { once: true });
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (audio.paused) {
+            audio.play().then(() => setPlaying(true)).catch(() => {});
+            started = true;
+        } else {
+            audio.pause();
+            setPlaying(false);
+        }
+    });
 })();
 </script>
 </body>
